@@ -22,13 +22,9 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.19.0'
-        channel: 'stable'
     
-    - name: Clean project
-      run: flutter clean
-    
-    - name: Get dependencies
-      run: flutter pub get
+    - name: Create Flutter project
+      run: flutter create --platforms=android .
     
     - name: Build APK
       run: flutter build apk --release
@@ -36,6 +32,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: student-management-app
+        name: app
         path: build/app/outputs/flutter-apk/app-release.apk
-        retention-days: 30
