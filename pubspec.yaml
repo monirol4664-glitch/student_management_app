@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  expression_eval: ^0.2.2  # For evaluating expressions
+  math_expressions: ^2.0.4  # ✅ REAL package for evaluating expressions
 
 dev_dependencies:
   flutter_test:
