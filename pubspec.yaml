@@ -1,5 +1,6 @@
+
 name: student_management_app
-description: Student Management System
+description: A new Flutter project.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -12,7 +13,7 @@ dependencies:
   sqflite: ^2.3.0
   path: ^1.8.0
   intl: ^0.18.0
-  provider: ^6.0.5
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
@@ -21,3 +22,56 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+EOF
+
+# Create main.dart
+cat > lib/main.dart << 'EOF'
+import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Student Management',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const HomeScreen(),
+    );
+  }
+}
+EOF
+
+# Create home_screen.dart
+cat > lib/screens/home_screen.dart << 'EOF'
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Student Management'),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text('Welcome to Student Management App'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+EOF
