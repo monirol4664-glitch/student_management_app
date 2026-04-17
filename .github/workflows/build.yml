@@ -8,41 +8,58 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
     - uses: actions/checkout@v4
-
+    
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-
+    
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.19.0'
         channel: 'stable'
-
+    
     - name: Backup your code AND dependencies
       run: |
         cp lib/main.dart main.dart.backup
-        cp pubspec.yaml pubspec.yaml.backup   # ✅ THIS LINE WAS MISSING
-
+        cp pubspec.yaml pubspec.yaml.backup
+    
     - name: Generate Android files
       run: flutter create --platforms=android . --overwrite
-
+    
     - name: Restore your code AND dependencies
       run: |
         cp main.dart.backup lib/main.dart
-        cp pubspec.yaml.backup pubspec.yaml   # ✅ THIS LINE WAS MISSING
-
+        cp pubspec.yaml.backup pubspec.yaml
+    
+    - name: Replace default icons with custom logo
+      run: |
+        # Copy your logo to all icon sizes (simplified - just one size)
+        # For a real app, you'd want properly sized images
+        mkdir -p android/app/src/main/res/mipmap-hdpi
+        mkdir -p android/app/src/main/res/mipmap-mdpi
+        mkdir -p android/app/src/main/res/mipmap-xhdpi
+        mkdir -p android/app/src/main/res/mipmap-xxhdpi
+        mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+        
+        # Copy same image to all densities (not ideal but works)
+        cp assets/icons/1776416865173.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+        cp assets/icons/1776416865173.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+        cp assets/icons/1776416865173.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+        cp assets/icons/1776416865173.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+        cp assets/icons/1776416865173.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+    
     - name: Get dependencies
       run: flutter pub get
-
+    
     - name: Build APK
       run: flutter build apk --release
-
+    
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
