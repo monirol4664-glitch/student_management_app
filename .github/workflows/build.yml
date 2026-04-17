@@ -24,9 +24,6 @@ jobs:
         flutter-version: '3.19.0'
         channel: 'stable'
     
-    - name: Install flutter_launcher_icons
-      run: dart pub global activate flutter_launcher_icons
-    
     - name: Backup your code and dependencies
       run: |
         cp lib/main.dart main.dart.backup
@@ -40,18 +37,22 @@ jobs:
         cp main.dart.backup lib/main.dart
         cp pubspec.yaml.backup pubspec.yaml
     
+    - name: Add flutter_launcher_icons to pubspec
+      run: |
+        echo "" >> pubspec.yaml
+        echo "dev_dependencies:" >> pubspec.yaml
+        echo "  flutter_launcher_icons: ^0.13.1" >> pubspec.yaml
+        echo "" >> pubspec.yaml
+        echo "flutter_launcher_icons:" >> pubspec.yaml
+        echo "  android: true" >> pubspec.yaml
+        echo "  image_path: assets/icons/1776416865173.png" >> pubspec.yaml
+        echo "  min_sdk_android: 21" >> pubspec.yaml
+    
     - name: Get dependencies
       run: flutter pub get
     
     - name: Generate app icon
-      run: |
-        cat > flutter_launcher_icons.yaml << EOF
-        flutter_launcher_icons:
-          android: true
-          image_path: assets/icons/1776416865173.png
-          min_sdk_android: 21
-        EOF
-        dart run flutter_launcher_icons:main -f flutter_launcher_icons.yaml
+      run: flutter pub run flutter_launcher_icons:main
     
     - name: Build APK
       run: flutter build apk --release
