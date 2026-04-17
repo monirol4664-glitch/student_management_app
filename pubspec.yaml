@@ -1,5 +1,5 @@
-name: student_management_app
-description: Student Management System
+name: student_app
+description: Simple student app
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,15 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  sqflite: ^2.3.0
-  path: ^1.8.0
-  intl: ^0.18.0
-  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
