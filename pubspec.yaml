@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  math_expressions: ^2.0.4  # ← THIS MUST BE HERE
+  math_expressions: ^2.0.4
 
 dev_dependencies:
   flutter_test:
@@ -19,3 +19,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icons/1776416865173.png
