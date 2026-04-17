@@ -8,37 +8,41 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-    
+
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.19.0'
         channel: 'stable'
-    
-    - name: Backup your code
-      run: cp lib/main.dart main.dart.backup
-    
+
+    - name: Backup your code AND dependencies
+      run: |
+        cp lib/main.dart main.dart.backup
+        cp pubspec.yaml pubspec.yaml.backup   # ✅ THIS LINE WAS MISSING
+
     - name: Generate Android files
       run: flutter create --platforms=android . --overwrite
-    
-    - name: Restore your code
-      run: cp main.dart.backup lib/main.dart
-    
+
+    - name: Restore your code AND dependencies
+      run: |
+        cp main.dart.backup lib/main.dart
+        cp pubspec.yaml.backup pubspec.yaml   # ✅ THIS LINE WAS MISSING
+
     - name: Get dependencies
       run: flutter pub get
-    
+
     - name: Build APK
       run: flutter build apk --release
-    
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
