@@ -32,11 +32,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
+    - name: Verify project root
+      run: |
+        ls -l
+        pwd
+
     - name: Build Debug APK
       run: ./gradlew assembleDebug
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug.apk
-        path: app/build/outputs/apk/debug/app-debug.apk
