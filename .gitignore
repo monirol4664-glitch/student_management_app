@@ -1,7 +1,21 @@
+# Flutter generated files
 .dart_tool/
 .pub/
 build/
-*.lock
-.DS_Store
 android/
 ios/
+linux/
+macos/
+windows/
+web/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.lock
+
+# Miscellaneous
+.DS_Store
+*.log
+*.pyc
