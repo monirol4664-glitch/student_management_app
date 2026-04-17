@@ -22,10 +22,15 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.19.0'
-        channel: 'stable'
     
-    - name: Create Flutter project
+    - name: Backup your code
+      run: cp lib/main.dart main.dart.backup
+    
+    - name: Generate Android files
       run: flutter create --platforms=android . --overwrite
+    
+    - name: Restore your code
+      run: cp main.dart.backup lib/main.dart
     
     - name: Get dependencies
       run: flutter pub get
@@ -38,4 +43,3 @@ jobs:
       with:
         name: calculator-app
         path: build/app/outputs/flutter-apk/app-release.apk
-        retention-days: 30
