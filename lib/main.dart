@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:expression_eval/expression_eval.dart';
+import 'package:math_expressions/math_expressions.dart';
 
 void main() {
   runApp(const CalculatorApp());
@@ -32,7 +32,6 @@ class CalculatorScreen extends StatefulWidget {
 class _CalculatorScreenState extends State<CalculatorScreen> {
   String _expression = '';
   String _result = '';
-  final Calculator _calculator = const Calculator();
 
   void _onButtonPressed(String value) {
     setState(() {
@@ -40,11 +39,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _expression = '';
         _result = '';
       } else if (value == '=') {
-        try {
-          _result = _calculator.evaluate(_expression).toString();
-        } catch (e) {
-          _result = 'Error';
-        }
+        _calculateResult();
       } else if (value == '⌫') {
         if (_expression.isNotEmpty) {
           _expression = _expression.substring(0, _expression.length - 1);
@@ -53,6 +48,29 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _expression += value;
       }
     });
+  }
+
+  void _calculateResult() {
+    try {
+      // Replace display symbols with actual operators
+      String expressionToEval = _expression
+          .replaceAll('×', '*')
+          .replaceAll('÷', '/');
+
+      Parser parser = Parser();
+      Expression exp = parser.parse(expressionToEval);
+      ContextModel cm = ContextModel();
+      double eval = exp.evaluate(EvaluationType.REAL, cm);
+      
+      // Format result (remove .0 if whole number)
+      if (eval == eval.toInt()) {
+        _result = eval.toInt().toString();
+      } else {
+        _result = eval.toString();
+      }
+    } catch (e) {
+      _result = 'Error';
+    }
   }
 
   @override
@@ -76,7 +94,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 Text(
                   _expression.isEmpty ? '0' : _expression,
                   style: const TextStyle(
-                    fontSize: 32,
+                    fontSize: 36,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -84,7 +102,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 Text(
                   _result.isEmpty ? '' : '= $_result',
                   style: const TextStyle(
-                    fontSize: 28,
+                    fontSize: 30,
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
@@ -119,9 +137,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 _buildButton('=', Colors.green, textColor: Colors.white),
                 _buildButton('+', Colors.orange, textColor: Colors.white),
                 _buildButton('⌫', Colors.grey[350]!, fontSize: 20),
-                _buildButton('.', Colors.grey[200]!),
                 _buildButton('(', Colors.grey[200]!),
                 _buildButton(')', Colors.grey[200]!),
+                _buildButton('.', Colors.grey[200]!),
               ],
             ),
           ),
