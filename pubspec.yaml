@@ -1,5 +1,5 @@
-name: student_app
-description: Simple student app
+name: calculator_app
+description: A simple calculator app
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,10 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.2
+  expression_eval: ^0.2.2  # For evaluating expressions
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
