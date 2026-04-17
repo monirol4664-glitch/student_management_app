@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,12 +10,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Student Management',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
+      title: 'Student App',
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('Student Management'),
+          backgroundColor: Colors.blue,
+        ),
+        body: const Center(
+          child: Text(
+            'Welcome!',
+            style: TextStyle(fontSize: 24),
+          ),
+        ),
       ),
-      home: const HomeScreen(),
     );
   }
 }
