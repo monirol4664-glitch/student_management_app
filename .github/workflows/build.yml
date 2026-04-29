@@ -1,4 +1,5 @@
-name: Build Android APK
+
+name: Build Sound Analyzer APK
 
 on: [push, workflow_dispatch]
 
@@ -21,7 +22,7 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Generate Project via Base64
+      - name: Generate Project
         run: |
           mkdir -p app/src/main/java/com/example/soundanalyzer
           cp MainActivity.kt app/src/main/java/com/example/soundanalyzer/
@@ -33,13 +34,13 @@ jobs:
           # Root build.gradle
           echo 'cGx1Z2lucyB7CiAgICBpZCAiY29tLmFuZHJvaWQuYXBwbGljYXRpb24iIHZlcnNpb24gIjguMi4yIiBhcHBseSBmYWxzZQogICAgaWQgIm9yZy5qZXRicmFpbnMua290bGluLmFuZHJvaWQiIHZlcnNpb24gIjEuOS4yMiIgYXBwbHkgZmFsc2UKfQ==' | base64 -d > build.gradle
 
-          # app/build.gradle - FIXED: "implementation" spelled correctly
+          # app/build.gradle
           echo 'cGx1Z2lucyB7CiAgICBpZCAiY29tLmFuZHJvaWQuYXBwbGljYXRpb24iCiAgICBpZCAib3JnLmpldGJyYWlucy5rb3RsaW4uYW5kcm9pZCIKfQoKYW5kcm9pZCB7CiAgICBuYW1lc3BhY2UgJ2NvbS5leGFtcGxlLnNvdW5kYW5hbHl6ZXInCiAgICBjb21waWxlU2RrVmVyc2lvbiAzNAoKICAgIGRlZmF1bHRDb25maWcgewogICAgICAgIGFwcGxpY2F0aW9uSWQgJ2NvbS5leGFtcGxlLnNvdW5kYW5hbHl6ZXInCiAgICAgICAgbWluU2RrVmVyc2lvbiAyNAogICAgICAgIHRhcmdldFNka1ZlcnNpb24gMzQKICAgICAgICB2ZXJzaW9uQ29kZSAxCiAgICAgICAgdmVyc2lvbk5hbWUgJzEuMCcKICAgIH0KCiAgICBidWlsZFR5cGVzIHsKICAgICAgICByZWxlYXNlIHsKICAgICAgICAgICAgbWluaWZ5RW5hYmxlZCBmYWxzZQogICAgICAgICAgICBzaWduaW5nQ29uZmlnIHNpZ25pbmdDb25maWdzLmRlYnVnCiAgICAgICAgfQogICAgfQoKICAgIGNvbXBpbGVPcHRpb25zIHsKICAgICAgICBzb3VyY2VDb21wYXRpYmlsaXR5IEphdmFWZXJzaW9uLlZFUlNJT05fMTcKICAgICAgICB0YXJnZXRDb21wYXRpYmlsaXR5IEphdmFWZXJzaW9uLlZFUlNJT05fMTcKICAgIH0KCiAgICBrb3RsaW5PcHRpb25zIHsKICAgICAgICBqdm1UYXJnZXQgPSAnMTcnCiAgICB9CgogICAgYnVpbGRGZWF0dXJlcyB7CiAgICAgICAgY29tcG9zZSB0cnVlCiAgICB9CgogICAgY29tcG9zZU9wdGlvbnMgewogICAgICAgIGtvdGxpbkNvbXBpbGVyRXh0ZW5zaW9uVmVyc2lvbiAnMS41LjEwJwogICAgfQp9CgpkZXBlbmRlbmNpZXMgewogICAgaW1wbGVtZW50YXRpb24gJ2FuZHJvaWR4LmNvcmU6Y29yZS1rdHg6MS4xMi4wJwogICAgaW1wbGVtZW50YXRpb24gJ2FuZHJvaWR4LmxpZmVjeWNsZTpsaWZlY3ljbGUtcnVudGltZS1rdHg6Mi43LjAnCiAgICBpbXBsZW1lbnRhdGlvbiAnYW5kcm9pZHguYWN0aXZpdHk6YWN0aXZpdHktY29tcG9zZToxLjguMicKICAgIGltcGxlbWVudGF0aW9uIHBsYXRmb3JtKCdhbmRyb2lkeC5jb21wb3NlOmNvbXBvc2UtYm9tOjIwMjQuMDIuMDAnKQogICAgaW1wbGVtZW50YXRpb24gJ2FuZHJvaWR4LmNvbXBvc2UudWk6dWknCiAgICBpbXBsZW1lbnRhdGlvbiAnYW5kcm9pZHguY29tcG9zZS5tYXRlcmlhbDM6bWF0ZXJpYWwzJwp9' | base64 -d > app/build.gradle
 
           # gradle.properties
           echo 'b3JnLmdyYWRsZS5qdmttYXJncz0tWG14MjA0OG0gLURmaWxlLmVuY29kaW5nPVVURi04CmFuZHJvaWQudXNlQW5kcm9pZFg9dHJ1ZQphbmRyb2lkLm5vblRyYW5zaXRpdmVSY2xhc3M9dHJ1ZQpvcmcuZ3JhZGxlLmRhZW1vbj1mYWxzZQ==' | base64 -d > gradle.properties
 
-          # AndroidManifest.xml - Valid system resources
+          # AndroidManifest.xml
           echo 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPG1hbmlmZXN0IHhtbG5zOmFuZHJvaWQ9Imh0dHA6Ly9zY2hlbWFzLmFuZHJvaWQuY29tL2Fway9yZXMvYW5kcm9pZCI+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLlJFQ09SRF9BVURJTyIvPgogICAgPGFwcGxpY2F0aW9uCiAgICAgICAgYW5kcm9pZDphbGxvd0JhY2t1cD0idHJ1ZSIKICAgICAgICBhbmRyb2lkOmxhYmVsPSJTb3VuZCBBbmFseXplciIKICAgICAgICBhbmRyb2lkOnRoZW1lPSJAYW5kcm9pZDpzdHlsZS9UaGVtZS5NYXRlcmlhbC5Ob0FjdGlvbkJhciIKICAgICAgICBhbmRyb2lkOmljb249IkBhbmRyb2lkOmRyYXdhYmxlL3N5bV9kZWZfYXBwX2ljb24iPgogICAgICAgIDxhY3Rpdml0eQogICAgICAgICAgICBhbmRyb2lkOm5hbWU9Ii5NYWluQWN0aXZpdHkiCiAgICAgICAgICAgIGFuZHJvaWQ6ZXhwb3J0ZWQ9InRydWUiPgogICAgICAgICAgICA8aW50ZW50LWZpbHRlcj4KICAgICAgICAgICAgICAgIDxhY3Rpb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLmludGVudC5hY3Rpb24uTUFJTiIvPgogICAgICAgICAgICAgICAgPGNhdGVnb3J5IGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5pbnRlbnQuY2F0ZWdvcnkuTEFVTkNIRVIiLz4KICAgICAgICAgICAgPC9pbnRlbnQtZmlsdGVyPgogICAgICAgIDwvYWN0aXZpdHk+CiAgICA8L2FwcGxpY2F0aW9uPgo8L21hbmlmZXN0Pg==' | base64 -d > app/src/main/AndroidManifest.xml
 
           touch app/proguard-rules.pro
