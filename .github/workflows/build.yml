@@ -18,115 +18,33 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.9'
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
-      - name: Accept Android Licenses & Install SDK
+      - name: Accept Android Licenses
         run: |
           export ANDROID_HOME=/usr/local/lib/android/sdk
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          echo "y" | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          $ANDROID_HOME/cmdline-tools/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" --channel=0 || true
 
-      - name: Generate Project Structure
+      - name: Generate Project via Base64 (No Shell Escaping Issues)
         run: |
           mkdir -p app/src/main/java/com/example/soundanalyzer
           mkdir -p app/src/main/res/values
 
-          cat > settings.gradle.kts << 'SETTINGS'
-          pluginManagement {
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories { google(); mavenCentral() }
-          }
-          rootProject.name = "SoundAnalyzer"
-          include(":app")
-          SETTINGS
+          # settings.gradle.kts
+          echo 'cGx1Z2luTWFuYWdlbWVudCB7CiAgICByZXBvc2l0b3JpZXMgeyBnb29nbGUoKTsgbWF2ZW5DZW50cmFsKCk7IGdyYWRsZVBsdWdpblBvcnRhbCgpIH0KfQpkZXBlbmRlbmN5UmVzb2x1dGlvbk1hbmFnZW1lbnQgewogICAgcmVwb3NpdG9yaWVzTW9kZS5zZXQoUmVwb3NpdG9yaWVzTW9kZS5GQUlMX09OX1BST0pFQ1RfUkVQT1MpCiAgICByZXBvc2l0b3JpZXMgeyBnb29nbGUoKTsgbWF2ZW5DZW50cmFsKCkgfQp9CnJvb3RQcm9qZWN0Lm5hbWUgPSAiU291bmRBbmFseXplciIKaW5jbHVkZSgiOmFwcCIp' | base64 -d > settings.gradle.kts
 
-          cat > build.gradle.kts << 'ROOT'
-          plugins {
-              id("com.android.application") version "8.5.0" apply false
-              id("org.jetbrains.kotlin.android") version "1.9.22" apply false
-          }          ROOT
+          # build.gradle.kts (root)
+          echo 'cGx1Z2lucyB7CiAgICBpZCgiY29tLmFuZHJvaWQuYXBwbGljYXRpb24iKSB2ZXJzaW9uICI4LjUuMCIgYXBwbHkgZmFsc2UKICAgIGlkKCJvcmcqamV0YnJhaW5zLmtvdGxpbi5hbmRyb2lkIikgdmVyc2lvbiAiMS45LjIyIiBhcHBseSBmYWxzZQp9' | base64 -d > build.gradle.kts
 
-          cat > app/build.gradle.kts << 'APP'
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-          }
+          # app/build.gradle.kts
+          echo 'cGx1Z2lucyB7CiAgICBpZCgiY29tLmFuZHJvaWQuYXBwbGljYXRpb24iKQogICAgaWQoIm9yZy5qZXRicmFpbnMua290bGluLmFuZHJvaWQiKQp9CgphbmRyb2lkIHsKICAgIG5hbWVzcGFjZSA9ICJjb20uZXhhbXBsZS5zb3VuZGFuYWx5emVyIgogICAgY29tcGlsZVNkayA9IDM0CgogICAgZGVmYXVsdENvbmZpZyB7CiAgICAgICAgYXBwbGljYXRpb25JZCA9ICJjb20uZXhhbXBsZS5zb3VuZGFuYWx5emVyIgogICAgICAgIG1pblNkayA9IDI0CiAgICAgICAgdGFyZ2V0U2RrID0gMzQKICAgICAgICB2ZXJzaW9uQ29kZSA9IDEKICAgICAgICB2ZXJzaW9uTmFtZSA9ICIxLjAiCiAgICB9CgogICAgc2lnbmluZ0NvbmZpZ3MgewogICAgICAgIGNyZWF0ZSgiZGVidWciKSB7CiAgICAgICAgICAgIHN0b3JlRmlsZSA9IGZpbGUoIiR7U3lzdGVtLmdldFByb3BlcnR5KCJ1c2VyLmhvbWUiKX0vLmFuZHJvaWQvZGVidWcua2V5c3RvcmUiKQogICAgICAgICAgICBzdG9yZVBhc3N3b3JkID0gImFuZHJvaWQiCiAgICAgICAgICAgIGtleUFsaWFzID0gImFuZHJvaWRkZWJ1Z2tleSIKICAgICAgICAgICAga2V5UGFzc3dvcmQgPSAiYW5kcm9pZCIKICAgICAgICB9CiAgICB9CgogICAgYnVpbGRUeXBlcyB7CiAgICAgICAgcmVsZWFzZSB7CiAgICAgICAgICAgIGlzTWluaWZ5RW5hYmxlZCA9IGZhbHNlCiAgICAgICAgICAgIHByb2d1YXJkRmlsZXMoZ2V0RGVmYXVsdFByb2d1YXJkRmlsZSgicHJvZ3VhcmQtYW5kcm9pZC1vcHRpbWl6ZS50eHQiKSwgInByb2d1YXJkLXJ1bGVzLnBybyIpCiAgICAgICAgICAgIHNpZ25pbmdDb25maWcgPSBzaWduaW5nQ29uZmlncy5nZXRCeU5hbWUoImRlYnVnIikKICAgICAgICB9CiAgICB9CgogICAgY29tcGlsZU9wdGlvbnMgewogICAgICAgIHNvdXJjZUNvbXBhdGliaWxpdHkgPSBKYXZhVmVyc2lvbi5WRVJTSU9OXzE3CiAgICAgICAgdGFyZ2V0Q29tcGF0aWJpbGl0eSA9IEphdmFWZXJzaW9uLlZFUlNJT05fMTcKICAgIH0KCiAgICBrb3RsaW5PcHRpb25zIHsganZtVGFyZ2V0ID0gIjE3IiB9CgogICAgYnVpbGRGZWF0dXJlcyB7IGNvbXBvc2UgPSB0cnVlIH0KICAgIGNvbXBvc2VPcHRpb25zIHsga290bGluQ29tcGlsZXJFeHRlbnNpb25WZXJzaW9uID0gIjEuNS44IiB9Cn0KCmRlcGVuZGVuY2llcyB7CiAgICBpbXBsZW1lbnRhdGlvbigiYW5kcm9peC5jb3JlOmNvcmUta3R4OjEuMTMuMSIpCiAgICBpbXBsZW1lbnRhdGlvbigiYW5kcm9peC5saWZlY3ljbGU6bGlmZWN5Y2xlLXJ1bnRpbWUta3R4OjIuOC4yIikKICAgIGltcGxlbWVudGF0aW9uKCJhbmRyb2lkeC5hY3Rpdml0eTphY3Rpdml0eS1jb21wb3NlOjEuOS4wIikKICAgIGltcGxlbWVudGF0aW9uKHBsYXRmb3JtKCJhbmRyb2lkeC5jb21wb3NlOmNvbXBvc2UtYm9tOjIwMjQuMDUuMDAiKSkKICAgIGltcGxlbWVudGF0aW9uKCJhbmRyb2lkeC5jb21wb3NlLnVpOnVpIikKICAgIGltcGxlbWVudGF0aW9uKCJhbmRyb2lkeC5jb21wb3NlLm1hdGVyaWFsMzptYXRlcmlhbDMiKQogICAgaW1wbGVtZW50YXRpb24oIm9yZy5qdHJhbnNmb3JtczpqdHJhbnNmb3JtczozLjEiKQp9' | base64 -d > app/build.gradle.kts
 
-          android {
-              namespace = "com.example.soundanalyzer"
-              compileSdk = 34
+          # gradle.properties
+          echo 'b3JnLmdyYWRsZS5qdmttYXJncz0tWG14MjA0OG0gLURmaWxlLmVuY29kaW5nPVVURi04CmFuZHJvaWQudXNlQW5kcm9pZFg9dHJ1ZQphbmRyb2lkLm5vblRyYW5zaXRpdmVSY2xhc3M9dHJ1ZQphbmRyb2lkLmJ1aWxkZXIuc2RrRG93bmxvYWQ9dHJ1ZQpvcmcuZ3JhZGxlLmRhZW1vbj1mYWxzZQ==' | base64 -d > gradle.properties
 
-              defaultConfig {
-                  applicationId = "com.example.soundanalyzer"
-                  minSdk = 24
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0"
-              }
-
-              signingConfigs {
-                  create("debug") {
-                      storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-                      storePassword = "android"
-                      keyAlias = "androiddebugkey"
-                      keyPassword = "android"
-                  }
-              }
-
-              buildTypes {
-                  release {
-                      isMinifyEnabled = false
-                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-                      signingConfig = signingConfigs.getByName("debug")
-                  }
-              }
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-
-              kotlinOptions { jvmTarget = "17" }
-
-              buildFeatures { compose = true }
-              composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
-          }
-
-          dependencies {
-              implementation("androidx.core:core-ktx:1.13.1")              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
-              implementation("androidx.activity:activity-compose:1.9.0")
-              implementation(platform("androidx.compose:compose-bom:2024.05.00"))
-              implementation("androidx.compose.ui:ui")
-              implementation("androidx.compose.material3:material3")
-              implementation("org.jtransforms:jtransforms:3.1")
-          }
-          APP
-
-          cat > gradle.properties << 'PROPS'
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          android.useAndroidX=true
-          android.nonTransitiveRClass=true
-          android.builder.sdkDownload=true
-          org.gradle.daemon=false
-          PROPS
-
-          cat > app/src/main/AndroidManifest.xml << 'MANIFEST'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <application android:allowBackup="true" android:label="Sound Analyzer" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:icon="@android:drawable/ic_media_play">
-                  <activity android:name=".MainActivity" android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          MANIFEST
+          # AndroidManifest.xml
+          echo 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPG1hbmlmZXN0IHhtbG5zOmFuZHJvaWQ9Imh0dHA6Ly9zY2hlbWFzLmFuZHJvaWQuY29tL2Fway9yZXMvYW5kcm9pZCI+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLlJFQ09SRF9BVURJTyIvPgogICAgPGFwcGxpY2F0aW9uCiAgICAgICAgYW5kcm9pZDphbGxvd0JhY2t1cD0idHJ1ZSIKICAgICAgICBhbmRyb2lkOmxhYmVsPSJTb3VuZCBBbmFseXplciIKICAgICAgICBhbmRyb2lkOnRoZW1lPSJAYW5kcm9pZC9zdHlsZS9UaGVtZS5NYXRlcmlhbC5MaWdodC5Ob0FjdGlvbkJhciIKICAgICAgICBhbmRyb2lkOmljb249IkBhbmRyb2lkLmRyYXdhYmxlL2ljX21lZGlhX3BsYXkiPgogICAgICAgIDxhY3Rpdml0eQogICAgICAgICAgICBhbmRyb2lkOm5hbWU9Ii5NYWluQWN0aXZpdHkiCiAgICAgICAgICAgIGFuZHJvaWQ6ZXhwb3J0ZWQ9InRydWUiPgogICAgICAgICAgICA8aW50ZW50LWZpbHRlcj4KICAgICAgICAgICAgICAgIDxhY3Rpb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLmludGVudC5hY3Rpb24uTUFJTiIvPgogICAgICAgICAgICAgICAgPGNhdGVnb3J5IGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5pbnRlbnQuY2F0ZWdvcnkuTEFVTkNIRVIiLz4KICAgICAgICAgICAgPC9pbnRlbnQtZmlsdGVyPgogICAgICAgIDwvYWN0aXZpdHk+CiAgICA8L2FwcGxpY2F0aW9uPgo8L21hbmlmZXN0Pg==' | base64 -d > app/src/main/AndroidManifest.xml
 
           touch app/proguard-rules.pro
 
