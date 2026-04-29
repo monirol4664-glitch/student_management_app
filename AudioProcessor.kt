@@ -1,45 +1,29 @@
 package com.example.soundanalyzer
 
-import kotlin.math.sqrt
 import kotlin.math.cos
+import kotlin.math.sqrt
 import kotlin.math.PI
 
 object AudioProcessor {
     /**
-     * Analyzes PCM 16-bit audio buffer using pure Kotlin DFT.
-     * No external dependencies - compiles 100% offline.
-     * For production: replace with optimized FFT library later.
+     * Pure Kotlin DFT implementation. Zero external dependencies.
+     * Guaranteed to compile offline on any Android device.
      */
     fun analyze(buffer: ShortArray, sampleRate: Int): Spectrum {
-        val size = buffer.size.coerceAtMost(1024) // Limit for performance
-        val fftSize = 1024 // Power of 2 for clean frequency bins
-        
-        // Convert to normalized doubles
-        val real = DoubleArray(fftSize)
-        val imag = DoubleArray(fftSize)
-        for (i in 0 until size) {
-            real[i] = buffer[i] / 32767.0
-        }
-        
-        // Apply Hanning window
-        for (i in 0 until fftSize) {
-            val window = 0.5 * (1 - cos(2 * PI * i / (fftSize - 1)))
-            real[i] *= window
-        }
-        
-        // Simple DFT (O(n²) but works for 1024 samples)
-        val magnitudes = DoubleArray(fftSize / 2)
-        for (k in 0 until magnitudes.size) {
-            var sumReal = 0.0
-            var sumImag = 0.0
-            for (n in 0 until fftSize) {
-                val angle = -2 * PI * k * n / fftSize
-                sumReal += real[n] * cos(angle)
-                sumImag += real[n] * kotlin.math.sin(angle)
+        val n = minOf(buffer.size, 512)
+        val magnitudes = DoubleArray(n / 2)
+
+        for (k in magnitudes.indices) {
+            var realSum = 0.0
+            var imagSum = 0.0
+            for (t in 0 until n) {
+                val angle = -2 * PI * k * t / n
+                val sample = buffer[t] / 32767.0
+                realSum += sample * cos(angle)
+                imagSum += sample * kotlin.math.sin(angle)
             }
-            magnitudes[k] = sqrt(sumReal * sumReal + sumImag * sumImag) / fftSize
+            magnitudes[k] = sqrt(realSum * realSum + imagSum * imagSum) / n
         }
-        
         return Spectrum(magnitudes, sampleRate)
     }
 
