@@ -1,76 +1,105 @@
 package com.example.soundanalyzer
 
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
-import kotlinx.coroutines.*
-import kotlin.math.*
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
-object AudioProcessor {
-    private const val SAMPLE_RATE = 44100
-    private const val BUFFER_SIZE = 2048
-    private const val SPEED_OF_SOUND = 343.0
+class MainActivity : ComponentActivity() {
+    private var hasPermission by mutableStateOf(false)
+    private var statusText by mutableStateOf("Tap to start")
+    private var frequencyText by mutableStateOf("Frequency: -- Hz")
+    private var wavelengthText by mutableStateOf("Wavelength: -- m")
     
-    private var audioRecord: AudioRecord? = null
-    private var job: Job? = null
-    private var running = false
+    private val requestPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasPermission = granted
+        if (granted) {
+            statusText = "Listening..."
+            startListening()
+        }
+    }
 
-    fun startAnalysis(onResult: (Double, Double, Double, DoubleArray) -> Unit) {
-        if (running) return
-        running = true
-        
-        val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        audioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuf, BUFFER_SIZE * 2))
-        
-        if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) { running = false; return }
-        
-        job = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                audioRecord?.startRecording()
-                val buf = ShortArray(BUFFER_SIZE)
-                while (running) {
-                    val read = audioRecord?.read(buf, 0, BUFFER_SIZE) ?: 0
-                    if (read > 0) {
-                        val (amp, freq, wave, spec) = analyze(buf, SAMPLE_RATE)
-                        withContext(Dispatchers.Main) { onResult(amp, freq, wave, spec) }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {                        Text(
+                            text = "🎙️ Sound Analyzer",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = {
+                                val ctx = LocalContext.current
+                                if (ContextCompat.checkSelfPermission(
+                                        ctx,
+                                        Manifest.permission.RECORD_AUDIO
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    hasPermission = true
+                                    statusText = "Listening..."
+                                    startListening()
+                                } else {
+                                    requestPermission.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            },
+                            enabled = !hasPermission
+                        ) {
+                            Text("🔊 Allow Microphone")
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = statusText, style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = frequencyText, style = MaterialTheme.typography.bodyMedium)
+                        Text(text = wavelengthText, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "Offline • No internet required",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    delay(100)
                 }
-            } finally { audioRecord?.stop() }
-        }
-    }
-
-    fun stopAnalysis() {
-        running = false
-        job?.cancel()
-        audioRecord?.release()
-        audioRecord = null
-    }
-
-    private fun analyze(buf: ShortArray, sr: Int): Quad {
-        val sig = DoubleArray(buf.size) { buf[it] / 32767.0 }
-        for (i in sig.indices) sig[i] *= 0.5 * (1 - cos(2 * PI * i / (sig.size - 1)))
-        
-        val mag = DoubleArray(sig.size / 2)
-        for (k in 0 until mag.size) {
-            var r = 0.0; var im = 0.0
-            for (t in sig.indices) {
-                val a = -2 * PI * k * t / sig.size
-                r += sig[t] * cos(a); im += sig[t] * sin(a)
             }
-            mag[k] = sqrt(r*r + im*im) / sig.size
         }
-        
-        val rms = sqrt(sig.map { it*it }.average())
-        val amp = if (rms > 1e-10) 20.0 * log10(rms) else -120.0
-        
-        var maxI = 1; var maxM = 0.0
-        for (i in 1 until mag.size / 2) if (mag[i] > maxM) { maxM = mag[i]; maxI = i }
-        val freq = maxI * sr.toDouble() / sig.size
-        val wave = if (freq > 20) SPEED_OF_SOUND / freq else Double.POSITIVE_INFINITY
-        
-        return Quad(amp, freq, wave, mag)
+    }
+
+    private fun startListening() {
+        lifecycleScope.launch {
+            AudioProcessor.startAnalysis(
+                onUpdate = { freq, wave ->
+                    frequencyText = "Frequency: ${String.format("%.0f", freq)} Hz"
+                    wavelengthText = "Wavelength: ${String.format("%.2f", wave)} m"
+                }
+            )
+        }    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        AudioProcessor.stopAnalysis()
     }
 }
-
-data class Quad(val amp: Double, val freq: Double, val wave: Double, val spec: DoubleArray)
