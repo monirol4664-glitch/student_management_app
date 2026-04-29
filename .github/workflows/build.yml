@@ -1,4 +1,4 @@
-name: Build Sound Analyzer APK
+name: Build APK
 
 on: [push, workflow_dispatch]
 
@@ -21,55 +21,12 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Generate Project
-        run: |
-          mkdir -p app/src/main/java/com/example/soundanalyzer
-          
-          # Copy root Kotlin files to correct location
-          if [ -f "MainActivity.kt" ]; then cp MainActivity.kt app/src/main/java/com/example/soundanalyzer/; fi
-          if [ -f "AudioProcessor.kt" ]; then cp AudioProcessor.kt app/src/main/java/com/example/soundanalyzer/; fi
-          
-          # settings.gradle
-          echo "pluginManagement { repositories { google(); mavenCentral() } }" > settings.gradle
-          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
-          echo 'rootProject.name = "SoundAnalyzer"' >> settings.gradle
-          echo "include ':app'" >> settings.gradle
-          
-          # Root build.gradle
-          echo 'plugins { id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }' > build.gradle
-          
-          # app/build.gradle (Groovy DSL - simple syntax)
-          echo 'plugins { id "com.android.application"; id "org.jetbrains.kotlin.android" }' > app/build.gradle
-          echo 'android { namespace "com.example.soundanalyzer"; compileSdkVersion 34' >> app/build.gradle
-          echo 'defaultConfig { applicationId "com.example.soundanalyzer"; minSdkVersion 24; targetSdkVersion 34; versionCode 1; versionName "1.0" }' >> app/build.gradle
-          echo 'buildTypes { release { minifyEnabled false; signingConfig signingConfigs.debug } }' >> app/build.gradle
-          echo 'compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }' >> app/build.gradle
-          echo 'kotlinOptions { jvmTarget = "17" }' >> app/build.gradle
-          echo 'buildFeatures { compose true }; composeOptions { kotlinCompilerExtensionVersion "1.5.10" } }' >> app/build.gradle
-          echo 'dependencies { implementation "androidx.core:core-ktx:1.12.0"; implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"; implementation "androidx.activity:activity-compose:1.8.2"; implementation platform("androidx.compose:compose-bom:2024.02.00"); implementation "androidx.compose.ui:ui"; implementation "androidx.compose.material3:material3" }' >> app/build.gradle
-          
-          # gradle.properties
-          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > gradle.properties
-          echo "android.useAndroidX=true" >> gradle.properties
-          echo "android.nonTransitiveRClass=true" >> gradle.properties
-          echo "org.gradle.daemon=false" >> gradle.properties
-          
-          # AndroidManifest.xml
-          echo '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.RECORD_AUDIO"/><application android:allowBackup="true" android:label="Sound Analyzer" android:theme="@android:style/Theme.Material.NoActionBar" android:icon="@android:drawable/sym_def_app_icon"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
-          
-          touch app/proguard-rules.pro
-
-      - name: Build APK
+      - name: Build Release APK
         run: gradle assembleRelease --no-daemon --no-parallel
 
-      - name: Collect APK
-        run: |
-          mkdir -p ./artifacts
-          find . -type f -name "*.apk" -exec cp {} ./artifacts/ \;
-          ls -lh ./artifacts/ || echo "No APK found"
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: sound-analyzer-apk
-          path: ./artifacts/*.apk
+          path: app/build/outputs/apk/release/*.apk
           retention-days: 90
