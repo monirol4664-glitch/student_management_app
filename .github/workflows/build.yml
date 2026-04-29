@@ -1,12 +1,11 @@
-name: Build Offline Sound Analyzer (Guaranteed)
+name: Build & Upload APK (Guaranteed)
 
 on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    continue-on-error: true  # Continue even if build warnings occur
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -22,37 +21,45 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Generate Project (No External FFT Deps)
+      - name: Generate Project
         run: |
           mkdir -p app/src/main/java/com/example/soundanalyzer
           cp MainActivity.kt app/src/main/java/com/example/soundanalyzer/
           cp AudioProcessor.kt app/src/main/java/com/example/soundanalyzer/
 
-          # settings.gradle - minimal, no JitPack needed
           printf 'pluginManagement { repositories { google(); mavenCentral() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\nrootProject.name = "SoundAnalyzer"\ninclude(":app")\n' > settings.gradle
 
-          # Root build.gradle
           printf 'plugins { id "com.android.application" version "8.2.0" apply false; id "org.jetbrains.kotlin.android" version "1.9.20" apply false }\n' > build.gradle
 
-          # app/build.gradle - NO external FFT library, pure Kotlin only
           printf 'plugins { id "com.android.application"; id "org.jetbrains.kotlin.android" }\nandroid { namespace "com.example.soundanalyzer"; compileSdk 34; defaultConfig { applicationId "com.example.soundanalyzer"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" }; buildTypes { release { minifyEnabled false; signingConfig signingConfigs.debug } }; compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" }; buildFeatures { compose true }; composeOptions { kotlinCompilerExtensionVersion "1.5.5" } }\ndependencies { implementation "androidx.core:core-ktx:1.12.0"; implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"; implementation "androidx.activity:activity-compose:1.8.2"; implementation platform("androidx.compose:compose-bom:2024.01.00"); implementation "androidx.compose.ui:ui"; implementation "androidx.compose.material3:material3" }\n' > app/build.gradle
 
-          # gradle.properties
           printf 'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.nonTransitiveRClass=true\norg.gradle.daemon=false\n' > gradle.properties
 
-          # AndroidManifest.xml
           printf '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.RECORD_AUDIO"/><application android:allowBackup="true" android:label="Sound Analyzer" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:icon="@android:drawable/ic_media_play"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
 
           touch app/proguard-rules.pro
 
-      - name: Build Release APK (Ignore Warnings)
-        run: gradle assembleRelease --stacktrace --warning-mode none || true
+      - name: Build Release APK
+        run: gradle assembleRelease --stacktrace --warning-mode none
 
-      - name: Upload APK Artifact (ALWAYS RUNS)
+      - name: Collect APKs (Failsafe Finder)
+        run: |
+          mkdir -p ./output
+          echo "🔍 Searching entire workspace for APKs..."
+          find . -path "*/build/outputs/*" -name "*.apk" -type f | while read apk; do
+            cp "$apk" ./output/
+            echo "✅ Copied: $apk"
+          done
+          
+          echo "📦 Contents of output folder:"
+          ls -lh ./output/ || echo "⚠️ No APKs found. Build likely skipped release."
+          echo "APK_COUNT=$(find ./output -name '*.apk' | wc -l)" >> $GITHUB_ENV
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
-        if: always()  # Upload even if build had warnings
+        if: env.APK_COUNT > 0
         with:
           name: sound-analyzer-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: ./output/*.apk
           retention-days: 30
           overwrite: true
