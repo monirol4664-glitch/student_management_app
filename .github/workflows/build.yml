@@ -1,11 +1,11 @@
-name: Build & Upload APK (Guaranteed)
+name: Build Android APK
 
 on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.5'
 
       - name: Generate Project
         run: |
@@ -27,39 +27,91 @@ jobs:
           cp MainActivity.kt app/src/main/java/com/example/soundanalyzer/
           cp AudioProcessor.kt app/src/main/java/com/example/soundanalyzer/
 
-          printf 'pluginManagement { repositories { google(); mavenCentral() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\nrootProject.name = "SoundAnalyzer"\ninclude(":app")\n' > settings.gradle
+          cat > settings.gradle << 'EOF'
+          pluginManagement { repositories { google(); mavenCentral() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name = "SoundAnalyzer"
+          include ":app"
+          EOF
 
-          printf 'plugins { id "com.android.application" version "8.2.0" apply false; id "org.jetbrains.kotlin.android" version "1.9.20" apply false }\n' > build.gradle
+          cat > build.gradle << 'EOF'
+          plugins {
+              id "com.android.application" version "8.2.2" apply false
+              id "org.jetbrains.kotlin.android" version "1.9.22" apply false
+          }
+          EOF
 
-          printf 'plugins { id "com.android.application"; id "org.jetbrains.kotlin.android" }\nandroid { namespace "com.example.soundanalyzer"; compileSdk 34; defaultConfig { applicationId "com.example.soundanalyzer"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" }; buildTypes { release { minifyEnabled false; signingConfig signingConfigs.debug } }; compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" }; buildFeatures { compose true }; composeOptions { kotlinCompilerExtensionVersion "1.5.5" } }\ndependencies { implementation "androidx.core:core-ktx:1.12.0"; implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"; implementation "androidx.activity:activity-compose:1.8.2"; implementation platform("androidx.compose:compose-bom:2024.01.00"); implementation "androidx.compose.ui:ui"; implementation "androidx.compose.material3:material3" }\n' > app/build.gradle
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id "com.android.application"
+              id "org.jetbrains.kotlin.android"
+          }
+          android {
+              namespace "com.example.soundanalyzer"              compileSdk 34
+              defaultConfig {
+                  applicationId "com.example.soundanalyzer"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      signingConfig signingConfigs.debug
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = "17" }
+              buildFeatures { compose true }
+              composeOptions { kotlinCompilerExtensionVersion "1.5.10" }
+          }
+          dependencies {
+              implementation "androidx.core:core-ktx:1.12.0"
+              implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
+              implementation "androidx.activity:activity-compose:1.8.2"
+              implementation platform("androidx.compose:compose-bom:2024.02.00")
+              implementation "androidx.compose.ui:ui"
+              implementation "androidx.compose.material3:material3"
+          }
+          EOF
 
-          printf 'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.nonTransitiveRClass=true\norg.gradle.daemon=false\n' > gradle.properties
+          cat > gradle.properties << 'EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          org.gradle.daemon=false
+          EOF
 
-          printf '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.RECORD_AUDIO"/><application android:allowBackup="true" android:label="Sound Analyzer" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:icon="@android:drawable/ic_media_play"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
-
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <application android:allowBackup="true" android:label="Sound Analyzer" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:icon="@android:drawable/ic_media_play">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>              </application>
+          </manifest>
+          EOF
           touch app/proguard-rules.pro
 
-      - name: Build Release APK
-        run: gradle assembleRelease --stacktrace --warning-mode none
+      - name: Build APK
+        run: gradle assembleRelease --no-daemon --no-parallel
 
-      - name: Collect APKs (Failsafe Finder)
+      - name: Collect APK
         run: |
-          mkdir -p ./output
-          echo "🔍 Searching entire workspace for APKs..."
-          find . -path "*/build/outputs/*" -name "*.apk" -type f | while read apk; do
-            cp "$apk" ./output/
-            echo "✅ Copied: $apk"
-          done
-          
-          echo "📦 Contents of output folder:"
-          ls -lh ./output/ || echo "⚠️ No APKs found. Build likely skipped release."
-          echo "APK_COUNT=$(find ./output -name '*.apk' | wc -l)" >> $GITHUB_ENV
+          mkdir -p ./artifacts
+          find . -type f -name "*.apk" -exec cp {} ./artifacts/ \;
+          ls -lh ./artifacts/
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        if: env.APK_COUNT > 0
+      - uses: actions/upload-artifact@v4
         with:
           name: sound-analyzer-apk
-          path: ./output/*.apk
-          retention-days: 30
-          overwrite: true
+          path: ./artifacts/*.apk
+          retention-days: 90
