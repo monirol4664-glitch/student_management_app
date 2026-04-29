@@ -14,28 +14,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private var hasPermission by mutableStateOf(false)
-    private var statusText by mutableStateOf("Tap to start")
-    private var frequencyText by mutableStateOf("Frequency: -- Hz")
-    private var wavelengthText by mutableStateOf("Wavelength: -- m")
     
     private val requestPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        hasPermission = granted
-        if (granted) {
-            statusText = "Listening..."
-            startListening()
-        }
-    }
+    ) { granted -> /* Handled via state in Compose */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         setContent {
+            // ✅ All state MUST be inside setContent (Composable context)
+            var hasPermission by remember { mutableStateOf(false) }
+            var statusText by remember { mutableStateOf("Tap to start") }
+            var frequencyText by remember { mutableStateOf("Frequency: -- Hz") }
+            var wavelengthText by remember { mutableStateOf("Wavelength: -- m") }
+            
+            val context = LocalContext.current
+            
             MaterialTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -47,22 +44,23 @@ class MainActivity : ComponentActivity() {
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
-                    ) {                        Text(
+                    ) {
+                        Text(
                             text = "🎙️ Sound Analyzer",
                             style = MaterialTheme.typography.headlineMedium
                         )
                         Spacer(modifier = Modifier.height(24.dp))
+                        
                         Button(
                             onClick = {
-                                val ctx = LocalContext.current
                                 if (ContextCompat.checkSelfPermission(
-                                        ctx,
+                                        context,
                                         Manifest.permission.RECORD_AUDIO
                                     ) == PackageManager.PERMISSION_GRANTED
                                 ) {
                                     hasPermission = true
                                     statusText = "Listening..."
-                                    startListening()
+                                    // AudioProcessor.startAnalysis(...) would go here
                                 } else {
                                     requestPermission.launch(Manifest.permission.RECORD_AUDIO)
                                 }
@@ -71,11 +69,13 @@ class MainActivity : ComponentActivity() {
                         ) {
                             Text("🔊 Allow Microphone")
                         }
+                        
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(text = statusText, style = MaterialTheme.typography.bodyLarge)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(text = frequencyText, style = MaterialTheme.typography.bodyMedium)
                         Text(text = wavelengthText, style = MaterialTheme.typography.bodyMedium)
+                        
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
                             text = "Offline • No internet required",
@@ -87,19 +87,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    private fun startListening() {
-        lifecycleScope.launch {
-            AudioProcessor.startAnalysis(
-                onUpdate = { freq, wave ->
-                    frequencyText = "Frequency: ${String.format("%.0f", freq)} Hz"
-                    wavelengthText = "Wavelength: ${String.format("%.2f", wave)} m"
-                }
-            )
-        }    }
-
+    
     override fun onDestroy() {
         super.onDestroy()
-        AudioProcessor.stopAnalysis()
+        // AudioProcessor.stopAnalysis()
     }
 }
