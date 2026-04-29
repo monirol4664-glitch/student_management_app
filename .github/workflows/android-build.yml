@@ -26,9 +26,6 @@ jobs:
           gradle-version: wrapper
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
