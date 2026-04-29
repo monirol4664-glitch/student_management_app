@@ -21,17 +21,17 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Generate Project with printf (No Heredoc Issues)
+      - name: Generate Project
         run: |
           mkdir -p app/src/main/java/com/example/soundanalyzer
           cp MainActivity.kt app/src/main/java/com/example/soundanalyzer/
           cp AudioProcessor.kt app/src/main/java/com/example/soundanalyzer/
 
-          printf 'pluginManagement {\n    repositories { google(); mavenCentral(); gradlePluginPortal() }\n}\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories { google(); mavenCentral() }\n}\nrootProject.name = "SoundAnalyzer"\ninclude(":app")\n' > settings.gradle
+          printf 'pluginManagement {\n    repositories { google(); mavenCentral(); gradlePluginPortal() }\n}\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories { google(); mavenCentral(); maven { url = uri("https://jitpack.io") } }\n}\nrootProject.name = "SoundAnalyzer"\ninclude(":app")\n' > settings.gradle
 
           printf 'plugins {\n    id "com.android.application" version "8.3.0" apply false\n    id "org.jetbrains.kotlin.android" version "1.9.0" apply false\n}\n' > build.gradle
 
-          printf 'plugins {\n    id "com.android.application"\n    id "org.jetbrains.kotlin.android"\n}\n\nandroid {\n    namespace "com.example.soundanalyzer"\n    compileSdk 34\n\n    defaultConfig {\n        applicationId "com.example.soundanalyzer"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n\n    buildTypes {\n        release {\n            minifyEnabled false\n            signingConfig signingConfigs.debug\n        }\n    }\n\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }\n    kotlinOptions { jvmTarget = "17" }\n    buildFeatures { compose true }\n    composeOptions { kotlinCompilerExtensionVersion "1.5.0" }\n}\n\ndependencies {\n    implementation "androidx.core:core-ktx:1.12.0"\n    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"\n    implementation "androidx.activity:activity-compose:1.8.2"\n    implementation platform("androidx.compose:compose-bom:2024.02.00")\n    implementation "androidx.compose.ui:ui"\n    implementation "androidx.compose.material3:material3"\n    implementation "org.jtransforms:jtransforms:3.1"\n}\n' > app/build.gradle
+          printf 'plugins {\n    id "com.android.application"\n    id "org.jetbrains.kotlin.android"\n}\n\nandroid {\n    namespace "com.example.soundanalyzer"\n    compileSdk 34\n\n    defaultConfig {\n        applicationId "com.example.soundanalyzer"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n\n    buildTypes {\n        release {\n            minifyEnabled false\n            signingConfig signingConfigs.debug\n        }\n    }\n\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }\n    kotlinOptions { jvmTarget = "17" }\n    buildFeatures { compose true }\n    composeOptions { kotlinCompilerExtensionVersion "1.5.0" }\n}\n\ndependencies {\n    implementation "androidx.core:core-ktx:1.12.0"\n    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"\n    implementation "androidx.activity:activity-compose:1.8.2"\n    implementation platform("androidx.compose:compose-bom:2024.02.00")\n    implementation "androidx.compose.ui:ui"\n    implementation "androidx.compose.material3:material3"\n    implementation "com.github.wendykierp:JTransforms:3.1"\n}\n' > app/build.gradle
 
           printf 'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.nonTransitiveRClass=true\norg.gradle.daemon=false\n' > gradle.properties
 
