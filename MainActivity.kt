@@ -28,87 +28,73 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
-
-    private val requestPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        // Permission handled via state
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SoundAnalyzerScreen(requestPermission)
+            AppContent()
         }
     }
 }
 
 @Composable
-fun SoundAnalyzerScreen(requestPermission: ActivityResultContracts.RequestPermission) {
+fun AppContent() {
     var hasPermission by remember { mutableStateOf(false) }
-    var statusText by remember { mutableStateOf("Tap to start") }
-    var freqText by remember { mutableStateOf("Frequency: -- Hz") }    var waveText by remember { mutableStateOf("Wavelength: -- m") }
+    var status by remember { mutableStateOf("Tap to start") }
+    var freq by remember { mutableStateOf("--") }
+    var wave by remember { mutableStateOf("--") }
     
     val context = LocalContext.current
-
-    MaterialTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Sound Analyzer",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Button(
-                    onClick = {
-                        if (ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.RECORD_AUDIO
-                            ) == PackageManager.PERMISSION_GRANTED
-                        ) {
-                            hasPermission = true
-                            statusText = "Listening"
-                            AudioProcessor.startAnalysis { freq, wave ->
-                                freqText = "Frequency: " + freq.toInt().toString() + " Hz"
-                                waveText = "Wavelength: " + String.format("%.2f", wave) + " m"
-                            }
-                        } else {
-                            requestPermission.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                    }
-                ) {
-                    Text(text = "Allow Microphone")
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = statusText)
-                Text(text = freqText)
-                Text(text = waveText)
-                
-                if (hasPermission) {
-                    Spacer(modifier = Modifier.height(16.dp))                    Button(
-                        onClick = {
-                            hasPermission = false
-                            statusText = "Tap to start"
-                            freqText = "Frequency: -- Hz"
-                            waveText = "Wavelength: -- m"
-                            AudioProcessor.stopAnalysis()
-                        }
-                    ) {
-                        Text(text = "Stop")
-                    }
-                }
+    val launcher = remember { 
+        ActivityResultContracts.RequestPermission() 
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(launcher) { granted ->        if (granted) {
+            hasPermission = true
+            status = "Listening"
+            AudioProcessor.startAnalysis { f, w ->
+                freq = f.toInt().toString()
+                wave = String.format("%.1f", w)
             }
         }
     }
+
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Sound Analyzer", style = MaterialTheme.typography.headlineMedium)
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        hasPermission = true
+                        status = "Listening"
+                        AudioProcessor.startAnalysis { f, w ->
+                            freq = f.toInt().toString()
+                            wave = String.format("%.1f", w)
+                        }
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }) { Text("Allow Microphone") }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(status)
+                Text("Frequency: " + freq + " Hz")
+                Text("Wavelength: " + wave + " m")
+                
+                if (hasPermission) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = {
+                        hasPermission = false
+                        status = "Tap to start"
+                        freq = "--"
+                        wave = "--"
+                        AudioProcessor.stopAnalysis()
+                    }) { Text("Stop") }
+                }
+            }
+        }    }
 }
