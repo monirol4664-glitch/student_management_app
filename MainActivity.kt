@@ -1,28 +1,50 @@
 package com.example.soundanalyzer
 
-import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D
-import kotlin.math.sqrt
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 
-object AudioProcessor {
-    /**
-     * Analyzes PCM 16-bit audio buffer offline using JTransforms.
-     * Returns normalized frequency magnitudes for visualization.
-     */
-    fun analyze(buffer: ShortArray, sampleRate: Int): Spectrum {
-        val size = buffer.size
-        val fftData = DoubleArray(size) { buffer[it] / 32767.0 }
-        
-        val fft = DoubleFFT_1D(size.toLong())
-        fft.realForward(fftData)
-
-        val magnitudes = DoubleArray(size / 2)
-        for (i in magnitudes.indices) {
-            val real = fftData[2 * i]
-            val imag = if (i == 0 || i == magnitudes.size - 1) 0.0 else fftData[2 * i + 1]
-            magnitudes[i] = sqrt(real * real + imag * imag) / size
-        }
-        return Spectrum(magnitudes, sampleRate)
+class MainActivity : ComponentActivity() {
+    private val requestMic = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> 
+        if (granted) startAudio() 
     }
 
-    data class Spectrum(val magnitudes: DoubleArray, val sampleRate: Int)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("🎙️ Offline Sound Analyzer", style = MaterialTheme.typography.headlineMedium)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = {
+                            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                                != PackageManager.PERMISSION_GRANTED
+                            ) requestMic.launch(Manifest.permission.RECORD_AUDIO)
+                            else startAudio()
+                        }) { Text("Start Analysis") }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun startAudio() { 
+        // AudioProcessor.analyze() can be called here when mic data is available
+    }
 }
