@@ -3,6 +3,7 @@ package com.example.soundanalyzer
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,19 +20,44 @@ class MainActivity : ComponentActivity() {
     
     private val requestPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> /* Handled via state in Compose */ }
+    ) { granted -> 
+        Log.d("SoundApp", "Permission result: $granted")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         setContent {
-            // ✅ All state MUST be inside setContent (Composable context)
             var hasPermission by remember { mutableStateOf(false) }
             var statusText by remember { mutableStateOf("Tap to start") }
             var frequencyText by remember { mutableStateOf("Frequency: -- Hz") }
             var wavelengthText by remember { mutableStateOf("Wavelength: -- m") }
             
             val context = LocalContext.current
+            
+            // ✅ Start/stop audio when permission state changes
+            LaunchedEffect(hasPermission) {
+                if (hasPermission) {
+                    Log.d("SoundApp", "Starting audio analysis")
+                    AudioProcessor.startAnalysis(
+                        onUpdate = { freq, wave ->
+                            Log.d("SoundApp", "Update: ${freq}Hz, ${wave}m")
+                            frequencyText = "Frequency: ${String.format("%.0f", freq)} Hz"
+                            wavelengthText = "Wavelength: ${String.format("%.2f", wave)} m"
+                            statusText = "🎙️ Listening..."
+                        },
+                        onError = { msg ->
+                            Log.e("SoundApp", "Error: $msg")                            statusText = "❌ $msg"
+                        }
+                    )
+                } else {
+                    Log.d("SoundApp", "Stopping audio analysis")
+                    AudioProcessor.stopAnalysis()
+                    statusText = "Tap to start"
+                    frequencyText = "Frequency: -- Hz"
+                    wavelengthText = "Wavelength: -- m"
+                }
+            }
             
             MaterialTheme {
                 Surface(
@@ -53,28 +79,37 @@ class MainActivity : ComponentActivity() {
                         
                         Button(
                             onClick = {
+                                Log.d("SoundApp", "Button clicked")
                                 if (ContextCompat.checkSelfPermission(
                                         context,
                                         Manifest.permission.RECORD_AUDIO
                                     ) == PackageManager.PERMISSION_GRANTED
                                 ) {
+                                    Log.d("SoundApp", "Permission already granted")
                                     hasPermission = true
-                                    statusText = "Listening..."
-                                    // AudioProcessor.startAnalysis(...) would go here
                                 } else {
+                                    Log.d("SoundApp", "Requesting permission")
                                     requestPermission.launch(Manifest.permission.RECORD_AUDIO)
                                 }
-                            },
-                            enabled = !hasPermission
+                            }
                         ) {
-                            Text("🔊 Allow Microphone")
+                            Text(if (hasPermission) "🔄 Restart" else "🔊 Allow Microphone")
                         }
                         
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(text = statusText, style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(16.dp))                        Text(text = statusText, style = MaterialTheme.typography.bodyLarge)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(text = frequencyText, style = MaterialTheme.typography.bodyMedium)
                         Text(text = wavelengthText, style = MaterialTheme.typography.bodyMedium)
+                        
+                        if (hasPermission) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { hasPermission = false },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("⏹️ Stop")
+                            }
+                        }
                         
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
@@ -90,6 +125,6 @@ class MainActivity : ComponentActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
-        // AudioProcessor.stopAnalysis()
+        AudioProcessor.stopAnalysis()
     }
 }
